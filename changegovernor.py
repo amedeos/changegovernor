@@ -2,6 +2,7 @@
 #
 import argparse
 from time import sleep
+from time import time
 from pathlib import Path
 import sys
 import re
@@ -151,9 +152,11 @@ def main():
     if governor:
         validateGovernor(defaultgovernor)
     json_object = json.load(open(configurationfile))
+    ptime = 0
     while True:
         p, pname = checkProcess(json_object)
         if p:
+            ptime = int(time())
             for proc in json_object['processes']:
                 if proc['name'] == pname:
                     if governor:
@@ -165,7 +168,8 @@ def main():
                         if extra != "":
                             executeCommand(extra)
         else:
-            if governor:
+            if ( governor and ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
+                ptime = 0
                 setGovernor(defaultgovernor)
         printMessage("Sleeping: '" + str(seconds) + "' seconds")
         sleep(seconds)
