@@ -10,8 +10,6 @@ import json
 import psutil
 import subprocess
 
-# TODO: to be deleted those global vars
-governor = ""
 __version__ = "0.1.0"
 
 def printMessage(msg, printMSG=False):
@@ -99,7 +97,7 @@ def parseArgs(parser):
 
 def validateGovernor(governor):
     printMessage("Change governor if needed")
-    printMessage("Default governor '" + governor + "'")
+    printMessage("Validate governor '" + governor + "'")
     if checkAvailableGovernor(governor) == False:
         printMessage("Governor: '" + governor + "' not found... Exit", True)
         sys.exit(1)
@@ -107,12 +105,8 @@ def validateGovernor(governor):
 def checkIfProcessIsRunning(process):
     printMessage("Is process '" + process + "' running")
     for proc in psutil.process_iter():
-        #printMessage(proc.name())
-        #continue
         try:
             if process in proc.name():
-                #printMessage("Found process name'" + proc.name + "' with pid '" +
-                #    str(proc.pid()) +  "process exe '" + str(proc.exe()) + "'")
                 printMessage("Found process '" + process + "' with pid '"
                     + str(proc.pid) + "'")
                 return True
@@ -144,7 +138,7 @@ def executeCommand(cmd):
 def setGovernor(governor):
     printMessage("Setting governor to '" + governor + "'")
     try:
-        cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"
+        cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
         executeCommand(cmd)
     except ValueError as e:
         printMessage("An error occurred during setGovernor function... Exit")
@@ -162,14 +156,17 @@ def main():
         if p:
             for proc in json_object['processes']:
                 if proc['name'] == pname:
-                    printMessage("Validate process '" + pname + "' with governor '" + proc['governor'])
-                    validateGovernor(proc['governor'])
-                    setGovernor(proc['governor'])
+                    if governor:
+                        printMessage("Validate process '" + pname +
+                            "' with governor '" + proc['governor'])
+                        validateGovernor(proc['governor'])
+                        setGovernor(proc['governor'])
                     for extra in proc['extra_commands']:
                         if extra != "":
                             executeCommand(extra)
         else:
-            setGovernor(defaultgovernor)
+            if governor:
+                setGovernor(defaultgovernor)
         printMessage("Sleeping: '" + str(seconds) + "' seconds")
         sleep(seconds)
 
