@@ -120,6 +120,10 @@ def checkProcess(json_object):
     try:
         for p in json_object['processes']:
             process = p['name']
+            if p['state'] != "present":
+                printMessage("Skip process '" + process +
+                    "' as it's state is not 'present' -> " + p['state'] )
+                continue
             printMessage("Trying to find process: '" + str(process) + "'")
             if checkIfProcessIsRunning(process):
                 return True, process
