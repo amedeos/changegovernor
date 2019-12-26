@@ -1,0 +1,22 @@
+{
+    "processes": [
+        {
+            "name": "emerge",
+            "state": "present",
+            "extra_commands": ["hostname", "sleep 1"],
+            "governor": "performance"
+        },
+        {
+            "name": "gcc",
+            "state": "present",
+            "extra_commands": ["hostname", "sleep 1"],
+            "governor": "performance"
+        },
+        {
+            "name": "sleep",
+            "state": "present",
+            "extra_commands": ["hostname", "echo zoticone"],
+            "governor": "performance"
+        }
+    ]
+}
