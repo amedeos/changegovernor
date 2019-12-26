@@ -17,6 +17,11 @@
             "state": "present",
             "extra_commands": ["hostname", "echo zoticone"],
             "governor": "performance"
+        },
+        {
+            "name": "DEFAULTS",
+            "state": "present",
+            "extra_commands": ["hostname", "echo cattivone"]
         }
     ]
 }

@@ -120,9 +120,10 @@ def checkProcess(json_object):
     try:
         for p in json_object['processes']:
             process = p['name']
-            if p['state'] != "present":
+            if (p['state'] != "present") or ( process == "DEFAULTS"):
                 printMessage("Skip process '" + process +
-                    "' as it's state is not 'present' -> " + p['state'] )
+                    "' as it's state is not 'present' -> " + p['state'] +
+                    " or is DEFAULTS")
                 continue
             printMessage("Trying to find process: '" + str(process) + "'")
             if checkIfProcessIsRunning(process):
@@ -172,9 +173,15 @@ def main():
                         if extra != "":
                             executeCommand(extra)
         else:
-            if ( governor and ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
+            if ( ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
                 ptime = 0
-                setGovernor(defaultgovernor)
+                if governor:
+                    setGovernor(defaultgovernor)
+                for proc in json_object['processes']:
+                    if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
+                        for extra in proc['extra_commands']:
+                            if extra != "":
+                                executeCommand(extra)
         printMessage("Sleeping: '" + str(seconds) + "' seconds")
         sleep(seconds)
 
