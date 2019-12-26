@@ -12,6 +12,7 @@ import subprocess
 
 # TODO: to be deleted those global vars
 governor = ""
+__version__ = "0.1.0"
 
 def printMessage(msg, printMSG=False):
     if debug:
@@ -82,8 +83,10 @@ def parseArgs(parser):
         default='/etc/changegovernor.json', help='Configuration file as json')
     parser.add_argument('-r', '--restore-seconds', type=int, dest='RESTORESECONDS',
         default=60, help='How many seconds wait for restoring previus configurations')
-    parser.add_argument('--debug', dest='DEBUG',
+    parser.add_argument('-v', '--verbose', dest='DEBUG',
         action='store_true', default=False, help='Activate debug messages')
+    parser.add_argument('--version', action='version',
+        version='%(prog)s {version}'.format(version=__version__))
 
     args = parser.parse_args()
 
