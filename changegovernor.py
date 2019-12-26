@@ -174,4 +174,8 @@ def main():
         printMessage("Sleeping: '" + str(seconds) + "' seconds")
         sleep(seconds)
 
-main()
+try:
+    main()
+except KeyboardInterrupt:
+    printMessage("Ctrl-C pressed... Exit", True)
+    sys.exit(0)
