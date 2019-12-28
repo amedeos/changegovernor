@@ -162,7 +162,7 @@ def main():
     if governor:
         validateGovernor(defaultgovernor)
     json_object = json.load(open(configurationfile))
-    ptime = 0
+    ptime = int(time())-(restoreseconds+1)
     while True:
         p, pname = checkProcess(json_object)
         if p:
