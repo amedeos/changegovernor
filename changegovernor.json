@@ -2,7 +2,7 @@
     "processes": [
         {
             "name": "emerge",
-            "state": "present",
+            "state": "absent",
             "extra_commands": ["hostname", "sleep 1"],
             "governor": "performance"
         },
@@ -22,6 +22,21 @@
             "name": "DEFAULTS",
             "state": "present",
             "extra_commands": ["hostname", "echo cattivone"]
+        }
+    ],
+    "percentages": [
+        {
+            "name": "HIGH",
+            "percent": "70",
+            "state": "present",
+            "extra_commands": ["hostname", "sleep 1"],
+            "governor": "performance"
+        },
+        {
+            "name": "LOW",
+            "percent": "30",
+            "state": "present",
+            "extra_commands": ["hostname", "sleep 1"]
         }
     ]
 }

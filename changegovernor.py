@@ -129,7 +129,7 @@ def checkProcess(json_object):
             if checkIfProcessIsRunning(process):
                 return True, process
     except ValueError as e:
-        printMessage("An error occurred during checkProcess function... Exit")
+        printMessage("An error occurred during checkProcess function... Exit", True)
         sys.exit(1)
     return False, ""
 
@@ -138,16 +138,21 @@ def executeCommand(cmd):
     try:
         subprocess.call(cmd, shell=True)
     except ValueError as e:
-        printMessage("An error occurred during executeCommand function... Exit")
+        printMessage("An error occurred during executeCommand function... Exit", True)
         sys.exit(1)
 
 def setGovernor(governor):
     printMessage("Setting governor to '" + governor + "'")
     try:
-        cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
-        executeCommand(cmd)
+        # first verify if the current governor in use
+        g = checkAvailableGovernor(governor, '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor')
+        if g:
+            printMessage("The governor '" + governor + "' is the current governor")
+        else:
+            cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
+            executeCommand(cmd)
     except ValueError as e:
-        printMessage("An error occurred during setGovernor function... Exit")
+        printMessage("An error occurred during setGovernor function... Exit", True)
         sys.exit(1)
 
 def main():
