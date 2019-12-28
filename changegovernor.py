@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 def printMessage(msg, printMSG=False):
     if debug:
@@ -155,6 +155,31 @@ def setGovernor(governor):
         printMessage("An error occurred during setGovernor function... Exit", True)
         sys.exit(1)
 
+def processes(json_object, ptime):
+    p, pname = checkProcess(json_object)
+    if p:
+        ptime = int(time())
+        for proc in json_object['processes']:
+            if proc['name'] == pname:
+                if governor:
+                    printMessage("Validate process '" + pname +
+                        "' with governor '" + proc['governor'])
+                    validateGovernor(proc['governor'])
+                    setGovernor(proc['governor'])
+                for extra in proc['extra_commands']:
+                    if extra != "":
+                        executeCommand(extra)
+    else:
+        if ( ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
+            ptime = 0
+            if governor:
+                setGovernor(defaultgovernor)
+            for proc in json_object['processes']:
+                if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
+                    for extra in proc['extra_commands']:
+                        if extra != "":
+                            executeCommand(extra)
+    return ptime
 def main():
     parser = argparse.ArgumentParser()
     parseArgs(parser)
@@ -164,29 +189,7 @@ def main():
     json_object = json.load(open(configurationfile))
     ptime = int(time())-(restoreseconds+1)
     while True:
-        p, pname = checkProcess(json_object)
-        if p:
-            ptime = int(time())
-            for proc in json_object['processes']:
-                if proc['name'] == pname:
-                    if governor:
-                        printMessage("Validate process '" + pname +
-                            "' with governor '" + proc['governor'])
-                        validateGovernor(proc['governor'])
-                        setGovernor(proc['governor'])
-                    for extra in proc['extra_commands']:
-                        if extra != "":
-                            executeCommand(extra)
-        else:
-            if ( ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
-                ptime = 0
-                if governor:
-                    setGovernor(defaultgovernor)
-                for proc in json_object['processes']:
-                    if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
-                        for extra in proc['extra_commands']:
-                            if extra != "":
-                                executeCommand(extra)
+        ptime = processes(json_object, ptime)
         printMessage("Sleeping: '" + str(seconds) + "' seconds")
         sleep(seconds)
 
