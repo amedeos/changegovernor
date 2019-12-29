@@ -180,6 +180,11 @@ def processes(json_object, ptime):
                         if extra != "":
                             executeCommand(extra)
     return ptime
+
+def sleeper(seconds):
+    printMessage("Sleeping: '" + str(seconds) + "' seconds")
+    sleep(seconds)
+
 def main():
     parser = argparse.ArgumentParser()
     parseArgs(parser)
@@ -190,8 +195,12 @@ def main():
     ptime = int(time())-(restoreseconds+1)
     while True:
         ptime = processes(json_object, ptime)
-        printMessage("Sleeping: '" + str(seconds) + "' seconds")
-        sleep(seconds)
+        while ptime > 0:
+            ## TODO: put here the logic to check via PySensor
+            ## if critical temperature is reached
+            ptime = processes(json_object, ptime)
+            sleeper(seconds)
+        sleeper(seconds)
 
 try:
     main()
