@@ -3,40 +3,113 @@
         {
             "name": "emerge",
             "state": "absent",
-            "extra_commands": ["hostname", "sleep 1"],
+            "extra_commands": [],
             "governor": "performance"
         },
         {
             "name": "gcc",
             "state": "present",
-            "extra_commands": ["hostname", "sleep 1"],
+            "extra_commands": [],
+            "governor": "performance"
+        },
+        {
+            "name": "cc1plus",
+            "state": "present",
+            "extra_commands": [],
             "governor": "performance"
         },
         {
             "name": "sleep",
-            "state": "present",
+            "state": "absent",
             "extra_commands": ["hostname", "echo zoticone"],
             "governor": "performance"
         },
         {
             "name": "DEFAULTS",
             "state": "present",
-            "extra_commands": ["hostname", "echo cattivone"]
+            "extra_commands": []
         }
     ],
     "percentages": [
         {
-            "name": "HIGH",
-            "percent": "70",
+            "name": "zero",
+            "min": "0",
+            "max": "9.9",
             "state": "present",
-            "extra_commands": ["hostname", "sleep 1"],
+            "extra_commands": ["echo percent zero"],
+            "governor": "powersave"
+        },
+        {
+            "name": "ten",
+            "min": "10",
+            "max": "19.9",
+            "state": "present",
+            "extra_commands": ["echo percent ten"],
+            "governor": "powersave"
+        },
+        {
+            "name": "twenty",
+            "min": "20",
+            "max": "29.9",
+            "state": "present",
+            "extra_commands": ["echo percent twenty"],
+            "governor": "powersave"
+        },
+        {
+            "name": "thirty",
+            "min": "30",
+            "max": "39.9",
+            "state": "present",
+            "extra_commands": ["echo percent thirty"],
+            "governor": "powersave"
+        },
+        {
+            "name": "forty",
+            "min": "40",
+            "max": "49.9",
+            "state": "present",
+            "extra_commands": ["echo percent forty"],
+            "governor": "powersave"
+        },
+        {
+            "name": "fifty",
+            "min": "50",
+            "max": "59.9",
+            "state": "present",
+            "extra_commands": ["echo percent fifty"],
+            "governor": "powersave"
+        },
+        {
+            "name": "sixty",
+            "min": "60",
+            "max": "69.9",
+            "state": "present",
+            "extra_commands": ["echo percent sixty"],
+            "governor": "powersave"
+        },
+        {
+            "name": "seventy",
+            "min": "70",
+            "max": "79.9",
+            "state": "present",
+            "extra_commands": ["echo percent seventy"],
             "governor": "performance"
         },
         {
-            "name": "LOW",
-            "percent": "30",
+            "name": "eigthy",
+            "min": "80",
+            "max": "89.9",
             "state": "present",
-            "extra_commands": ["hostname", "sleep 1"]
+            "extra_commands": ["echo percent eighty"],
+            "governor": "performance"
+        },
+        {
+            "name": "ninety",
+            "min": "90",
+            "max": "100",
+            "state": "present",
+            "extra_commands": ["echo percent ninety"],
+            "governor": "performance"
         }
     ]
 }
