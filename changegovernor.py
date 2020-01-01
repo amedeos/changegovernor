@@ -149,6 +149,7 @@ def setGovernor(governor):
         if g:
             printMessage("The governor '" + governor + "' is the current governor")
         else:
+            printMessage("Change to governor: '" + governor + "'", True)
             cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
             executeCommand(cmd)
     except ValueError as e:
@@ -199,6 +200,9 @@ def percentages(json_object, percenttime):
             return percenttime
     return percenttime
 
+def sensors(json_object, stime):
+    return stime
+
 def main():
     parser = argparse.ArgumentParser()
     parseArgs(parser)
@@ -208,16 +212,20 @@ def main():
     json_object = json.load(open(configurationfile))
     ptime = int(time())-(restoreseconds+1)
     percenttime = int(0)
+    stime = int(0)
     while True:
-        ### set governor based on processes running
-        ptime = processes(json_object, ptime)
-        while ptime > 0:
-            ## TODO: put here the logic to check via PySensor
-            ## if critical temperature is reached
+        ### first check the sensors temperatures
+        stime = sensors(json_object, stime)
+        if stime == 0:
+            ### set governor based on processes running
             ptime = processes(json_object, ptime)
-            sleeper(seconds)
-        ### set governor based on percentage
-        percenttime = percentages(json_object, percenttime)
+            while ptime > 0:
+                ## TODO: put here the logic to check via psutil
+                ## if critical temperature is reached
+                ptime = processes(json_object, ptime)
+                sleeper(seconds)
+            ### set governor based on percentage
+            percenttime = percentages(json_object, percenttime)
         ### finally sleep
         sleeper(seconds)
 
