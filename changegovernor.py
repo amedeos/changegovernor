@@ -71,17 +71,20 @@ def parseArgs(parser):
     global defaultgovernor
     global configurationfile
     global restoreseconds
+    global libsensors
     global debug
     parser.add_argument('-s', '--seconds', type=int, dest='SECONDS',
         default=5, help='Define how many seconds to sleep')
     parser.add_argument('-g', '--change-governor', dest='GOVERNOR',
-        action='store_true', default=False, help='Change cpu governor from powersave to performance')
+        action='store_true', default=False, help='Change cpu governor from default to the choosed one')
     parser.add_argument('-d', '--default-governor', dest='DEFAULTGOVERNOR',
         default='powersave', help='Default cpu scheduler')
     parser.add_argument('-c', '--config-file', dest='CONFIGURATIONFILE',
         default='/etc/changegovernor.json', help='Configuration file as json')
     parser.add_argument('-r', '--restore-seconds', type=int, dest='RESTORESECONDS',
-        default=60, help='How many seconds wait for restoring previus configurations')
+        default=10, help='How many seconds wait for restoring default configurations')
+    parser.add_argument('-l', '--sensors', dest='LIBSENSORS',
+        action='store_true', default=False, help='Activate temperatures detection via libsensors')
     parser.add_argument('-v', '--verbose', dest='DEBUG',
         action='store_true', default=False, help='Activate debug messages')
     parser.add_argument('--version', action='version',
@@ -94,6 +97,7 @@ def parseArgs(parser):
     defaultgovernor = args.DEFAULTGOVERNOR
     configurationfile = args.CONFIGURATIONFILE
     restoreseconds = args.RESTORESECONDS
+    libsensors = args.LIBSENSORS
     debug = args.DEBUG
 
 def validateGovernor(governor):
@@ -200,7 +204,61 @@ def percentages(json_object, percenttime):
             return percenttime
     return percenttime
 
+def percentage(part, whole):
+    try:
+        return 100.0 * float(part)/float(whole)
+    except ZeroDivisionError:
+        printMessage("When calculating a percentage the whole part is zero", True)
+        return 0
+
 def sensors(json_object, stime):
+    if libsensors == False:
+        stime = 0
+        return stime
+    try:
+        temp = float(0)
+        crit = float(0)
+        stemps = psutil.sensors_temperatures()
+        for s in json_object['sensors']:
+            # try to find sensors's name in libsensors
+            slist = stemps.get(s['name'])
+            if (slist and
+                s['state'] == "present"):
+                printMessage("sensors - Found sensor '" + s['name'] + "'")
+                for l in slist:
+                    if l.label == s['label']:
+                        printMessage("sensors - Found  label '" +
+                            s['label'] + "' for sensor '" + s['name'] + "'")
+                        temp = l.current
+                        crit = l.critical
+                        printMessage("sensors - " + s['name'] +
+                            " " + s['label'] + " temperature: " + str(temp))
+                        printMessage("sensors - " + s['name'] +
+                            " " + s['label'] + " critical: " + str(crit))
+                        if (isinstance(temp, (int, float)) and
+                            isinstance(crit, (int, float))):
+                            # now we can calculate the percentages from critical
+                            p = percentage(temp, crit)
+                            printMessage("sensors - temperature " + str(temp) + " are " +
+                                str(p) + "% of critical " + str(crit))
+                            if (float(s['percent_from_critical']) >= (100.0 - p) ):
+                                stime = int(time())
+                                setGovernor(s['governor'])
+                                for extra in s['extra_commands']:
+                                    if extra != "":
+                                        executeCommand(extra)
+                                return stime
+                            else:
+                                stime = 0
+                                return stime
+                        else:
+                            printMessage("sensors - temperetures are not integers or floats... skipping")
+                            continue
+            printMessage("sensors - Sensor NOT found '" + s['name'] + "'")
+    except Exception as e:
+        printMessage("Error on sensors function")
+        print(e)
+        sys.exit(1)
     return stime
 
 def main():
@@ -220,8 +278,10 @@ def main():
             ### set governor based on processes running
             ptime = processes(json_object, ptime)
             while ptime > 0:
-                ## TODO: put here the logic to check via psutil
-                ## if critical temperature is reached
+                # first check temperature limits via libsensors
+                stime = sensors(json_object, stime)
+                if stime > 0:
+                    break
                 ptime = processes(json_object, ptime)
                 sleeper(seconds)
             ### set governor based on percentage
