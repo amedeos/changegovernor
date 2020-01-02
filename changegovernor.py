@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 def printMessage(msg, printMSG=False):
     if debug:
