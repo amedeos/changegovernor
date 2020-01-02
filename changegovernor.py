@@ -250,11 +250,16 @@ def sensors(json_object, stime):
                                 return stime
                             else:
                                 stime = 0
-                                return stime
+                                continue
                         else:
                             printMessage("sensors - temperetures are not integers or floats... skipping")
                             continue
-            printMessage("sensors - Sensor NOT found '" + s['name'] + "'")
+                    else:
+                        printMessage("sensors - Sensor NOT to be monitored '" + s['name'] +
+                            "' label '" + l.label + "'")
+                        continue
+            printMessage("sensors - end sensor '" + s['name'])
+        return stime
     except Exception as e:
         printMessage("Error on sensors function")
         print(e)

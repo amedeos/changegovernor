@@ -42,7 +42,31 @@
             "state": "present",
             "label": "Tdie",
             "percent_from_critical": "5.0",
-            "extra_commands": ["hostname", "echo sensors k10temp"],
+            "extra_commands": [],
+            "governor": "powersave"
+        },
+        {
+            "name": "amdgpu",
+            "state": "present",
+            "label": "edge",
+            "percent_from_critical": "5.0",
+            "extra_commands": [],
+            "governor": "powersave"
+        },
+        {
+            "name": "nct6795iss",
+            "state": "present",
+            "label": "CPUTIN",
+            "percent_from_critical": "10.0",
+            "extra_commands": [],
+            "governor": "powersave"
+        },
+        {
+            "name": "nct6795",
+            "state": "present",
+            "label": "AUXTIN0",
+            "percent_from_critical": "10.0",
+            "extra_commands": [],
             "governor": "powersave"
         }
     ],
