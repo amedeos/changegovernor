@@ -14,6 +14,9 @@ import subprocess
 __version__ = "0.4.0"
 
 def printMessage(msg, printMSG=False):
+    """
+    Print on standart output messages
+    """
     if debug:
         printMSG = True
     if printMSG:
@@ -23,6 +26,9 @@ def printMessage(msg, printMSG=False):
 
 def checkAvailableGovernor(governor,
     agfile = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors'):
+    """
+    Return boolean if the governor exist or not
+    """
     try:
         ag = Path(agfile)
         ag.resolve(strict=True)
@@ -40,6 +46,9 @@ def checkAvailableGovernor(governor,
         sys.exit(1)
 
 def fileIsJson(jsonfile):
+    """
+    Return true if the jsonfile is a valid json
+    """
     try:
         json_object = json.load(open(jsonfile))
         printMessage("Content of json file: " + str(jsonfile))
@@ -49,6 +58,9 @@ def fileIsJson(jsonfile):
     return True
 
 def validateConfigurationFile(jsonfile):
+    """
+    Validate the json configuration file
+    """
     try:
         cf = Path(jsonfile)
         cf.resolve(strict=True)
@@ -101,13 +113,20 @@ def parseArgs(parser):
     debug = args.DEBUG
 
 def validateGovernor(governor):
-    printMessage("Change governor if needed")
+    """
+    Validate if the input governor name is a valid
+    governor present on the host
+    """
     printMessage("Validate governor '" + governor + "'")
     if checkAvailableGovernor(governor) == False:
         printMessage("Governor: '" + governor + "' not found... Exit", True)
         sys.exit(1)
 
 def checkIfProcessIsRunning(process):
+    """
+    Return boolean, based on the presence of the process
+    running on the host
+    """
     for proc in psutil.process_iter():
         try:
             if process in proc.name():
@@ -120,6 +139,11 @@ def checkIfProcessIsRunning(process):
     return False
 
 def checkProcess(json_object):
+    """
+    Loop for the 'processes' objects in the json and verify
+    for every of them, if is running on the host, and on this
+    case return True and the name of process
+    """
     try:
         for p in json_object['processes']:
             process = p['name']
@@ -137,6 +161,9 @@ def checkProcess(json_object):
     return False, ""
 
 def executeCommand(cmd):
+    """
+    Execute command on the host
+    """
     printMessage("Execute command '" + cmd + "'")
     try:
         subprocess.call(cmd, shell=True)
@@ -145,8 +172,12 @@ def executeCommand(cmd):
         sys.exit(1)
 
 def setGovernor(governor):
+    """
+    Set the desired governor as the current one
+    """
     printMessage("Setting governor to '" + governor + "'")
     try:
+        # validate the governor
         validateGovernor(governor)
         # first verify if the current governor in use
         g = checkAvailableGovernor(governor, '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor')
@@ -161,8 +192,14 @@ def setGovernor(governor):
         sys.exit(1)
 
 def processes(json_object, ptime):
+    """
+    Loop for processes and set the corresponding governor,
+    and execute every extra commands required by user
+    If no process will be found return 0
+    """
     p, pname = checkProcess(json_object)
     if p:
+        # one of the process was found
         ptime = int(time())
         for proc in json_object['processes']:
             if ( proc['name'] == pname ) and ( proc['state'] == "present" ):
@@ -172,6 +209,8 @@ def processes(json_object, ptime):
                     if extra != "":
                         executeCommand(extra)
     else:
+        # no process found, but before to set the default governor
+        # we've to wait until the 'restoreseconds'
         if ( ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
             ptime = 0
             if governor:
@@ -184,10 +223,18 @@ def processes(json_object, ptime):
     return ptime
 
 def sleeper(seconds):
+    """
+    Sleep for the desired seconds
+    """
     printMessage("Sleeping: '" + str(seconds) + "' seconds")
     sleep(seconds)
 
 def percentages(json_object, percenttime):
+    """
+    Loop for the percentages objects in the json file
+    and set the desired governor for the corresponding 
+    range (min >= VALUE <= max)
+    """
     cpuPercent = float(psutil.cpu_percent())
     for proc in json_object['percentages']:
         if (( cpuPercent >= float(proc['min']) )
@@ -205,6 +252,9 @@ def percentages(json_object, percenttime):
     return percenttime
 
 def percentage(part, whole):
+    """
+    Return percentage in float value
+    """
     try:
         return 100.0 * float(part)/float(whole)
     except ZeroDivisionError:
@@ -212,7 +262,14 @@ def percentage(part, whole):
         return 0
 
 def sensors(json_object, stime):
+    """
+    Loop for the sensors objects in the json file and
+    if the corresponding libsensors value is near (in %)
+    to the critical value found, set the governor and
+    the extra commands
+    """
     if libsensors == False:
+        # libsensors disabled
         stime = 0
         return stime
     try:
@@ -242,6 +299,7 @@ def sensors(json_object, stime):
                             printMessage("sensors - temperature " + str(temp) + " are " +
                                 str(p) + "% of critical " + str(crit))
                             if (float(s['percent_from_critical']) >= (100.0 - p) ):
+                                # we are reaching the critical temp
                                 stime = int(time())
                                 setGovernor(s['governor'])
                                 for extra in s['extra_commands']:
@@ -267,31 +325,36 @@ def sensors(json_object, stime):
     return stime
 
 def main():
+    # parsing command line parameters
     parser = argparse.ArgumentParser()
     parseArgs(parser)
+    # check if the configuration file is a valid json
     validateConfigurationFile(configurationfile)
-    if governor:
-        validateGovernor(defaultgovernor)
     json_object = json.load(open(configurationfile))
+    # set ptime in the past to force default
+    # governor initialization
     ptime = int(time())-(restoreseconds+1)
     percenttime = int(0)
     stime = int(0)
     while True:
-        ### first check the sensors temperatures
+        # first check the sensors temperatures
+        # and loop until below the critical
         stime = sensors(json_object, stime)
         if stime == 0:
-            ### set governor based on processes running
+            # set governor based on processes running
             ptime = processes(json_object, ptime)
             while ptime > 0:
-                # first check temperature limits via libsensors
+                # again, check if critical temperatures
+                # was reached
                 stime = sensors(json_object, stime)
                 if stime > 0:
+                    # return to main / sensors loop
                     break
                 ptime = processes(json_object, ptime)
                 sleeper(seconds)
-            ### set governor based on percentage
+            # set governor based on percentages
             percenttime = percentages(json_object, percenttime)
-        ### finally sleep
+        # at the end we can sleep
         sleeper(seconds)
 
 try:
