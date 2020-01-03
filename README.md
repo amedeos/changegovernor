@@ -6,4 +6,5 @@ Since the program need to write the CPU governor to be used, it need root or sud
 $ sudo ./changegovernor.py --help
 $ sudo ./changegovernor.py -c changegovernor.json -g -l
 ```
-
+## Operating flow
+<img src="https://github.com/amedeos/changegovernor/raw/master/changegovernor-operatingflow.png" width=800 />
