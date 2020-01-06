@@ -25,6 +25,12 @@
             "governor": "performance"
         },
         {
+            "name": "steam",
+            "state": "present",
+            "extra_commands": [],
+            "governor": "performance"
+        },
+        {
             "name": "sleep",
             "state": "absent",
             "extra_commands": ["hostname", "echo zoticone"],
