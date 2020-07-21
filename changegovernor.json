@@ -37,7 +37,7 @@
         },
         {
             "name": "sleep",
-            "state": "present",
+            "state": "absent",
             "extra_commands": ["hostname", "echo zoticone"],
             "governor": "performance",
             "energyPerformance": "performance"
