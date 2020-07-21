@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.4.1"
+__version__ = "0.5.0"
 
 def printMessage(msg, printMSG=False):
     """
@@ -36,6 +36,27 @@ def checkAvailableGovernor(governor,
             printMessage("CPU Governors: '" + line + "'")
             if re.search(governor, line):
                 printMessage("Found governor '" + governor + "'")
+                return True
+        return False
+    except FileNotFoundError:
+        printMessage("File '" + agfile + "' doesn't exist... Exit", True)
+        sys.exit(1)
+    except PermissionError:
+        printMessage("No read permission on file '" + agfile + "' ... Exit", True)
+        sys.exit(1)
+
+def checkAvailableEnergyPerformance(energyPerformance,
+    agfile = '/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_available_preferences'):
+    """
+    Return boolean if the energyPerformance exist or not
+    """
+    try:
+        ag = Path(agfile)
+        ag.resolve(strict=True)
+        for line in ag.open(mode='r'):
+            printMessage("CPU energyPerformance: '" + line + "'")
+            if re.search(energyPerformance, line):
+                printMessage("Found energyPerformance '" + energyPerformance + "'")
                 return True
         return False
     except FileNotFoundError:
@@ -81,6 +102,8 @@ def parseArgs(parser):
     global seconds
     global governor
     global defaultgovernor
+    global energyPerformance
+    global defaultenergyPerformance
     global configurationfile
     global restoreseconds
     global libsensors
@@ -91,6 +114,10 @@ def parseArgs(parser):
         action='store_true', default=False, help='Change cpu governor from default to the choosed one')
     parser.add_argument('-d', '--default-governor', dest='DEFAULTGOVERNOR',
         default='powersave', help='Default cpu scheduler')
+    parser.add_argument('-e', '--change-energy-erformance', dest='ENERGYPERFORMANCE',
+        action='store_true', default=False, help='Change cpu energy performance from default to the choosed one')
+    parser.add_argument('-D', '--default-energy-performance', dest='DEFAULTENERGYPERFORMANCE',
+        default='power', help='Default cpu energy performance')
     parser.add_argument('-c', '--config-file', dest='CONFIGURATIONFILE',
         default='/etc/changegovernor.json', help='Configuration file as json')
     parser.add_argument('-r', '--restore-seconds', type=int, dest='RESTORESECONDS',
@@ -107,6 +134,8 @@ def parseArgs(parser):
     seconds = args.SECONDS
     governor = args.GOVERNOR
     defaultgovernor = args.DEFAULTGOVERNOR
+    energyPerformance = args.ENERGYPERFORMANCE
+    defaultenergyPerformance = args.DEFAULTENERGYPERFORMANCE
     configurationfile = args.CONFIGURATIONFILE
     restoreseconds = args.RESTORESECONDS
     libsensors = args.LIBSENSORS
@@ -120,6 +149,16 @@ def validateGovernor(governor):
     printMessage("Validate governor '" + governor + "'")
     if checkAvailableGovernor(governor) == False:
         printMessage("Governor: '" + governor + "' not found... Exit", True)
+        sys.exit(1)
+
+def validateEnergyPerformance(energyPerformance):
+    """
+    Validate if the input energyPerformance name is a valid
+    energyPerformance present on the host
+    """
+    printMessage("Validate energyPerformance '" + energyPerformance + "'")
+    if checkAvailableGovernor(energyPerformance) == False:
+        printMessage("Energy performance: '" + energyPerformance + "' not found... Exit", True)
         sys.exit(1)
 
 def checkIfProcessIsRunning(process):
@@ -191,9 +230,29 @@ def setGovernor(governor):
         printMessage("An error occurred during setGovernor function... Exit", True)
         sys.exit(1)
 
+def setEnergyPerformance(energyPerformance):
+    """
+    Set the desired energyPerformance as the current one
+    """
+    printMessage("Setting energyPerformance to '" + energyPerformance + "'")
+    try:
+        # validate the energyPerformance
+        validateEnergyPerformance(energyPerformance)
+        # first verify if the current energyPerformance in use
+        g = checkAvailableEnergyPerformance(energyPerformance, '/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference')
+        if g:
+            printMessage("The energyPerformance '" + energyPerformance + "' is the current energyPerformance")
+        else:
+            printMessage("Change to energyPerformance: '" + energyPerformance + "'", True)
+            cmd = "echo " + energyPerformance + " | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference > /dev/null"
+            executeCommand(cmd)
+    except ValueError as e:
+        printMessage("An error occurred during setEnergyPerformance function... Exit", True)
+        sys.exit(1)
+
 def processes(json_object, ptime):
     """
-    Loop for processes and set the corresponding governor,
+    Loop for processes and set the corresponding governor, energyPerformance,
     and execute every extra commands required by user
     If no process will be found return 0
     """
@@ -205,6 +264,8 @@ def processes(json_object, ptime):
             if ( proc['name'] == pname ) and ( proc['state'] == "present" ):
                 if governor:
                     setGovernor(proc['governor'])
+                if energyPerformance:
+                    setEnergyPerformance(proc['energyPerformance'])
                 for extra in proc['extra_commands']:
                     if extra != "":
                         executeCommand(extra)
@@ -215,6 +276,8 @@ def processes(json_object, ptime):
             ptime = 0
             if governor:
                 setGovernor(defaultgovernor)
+            if energyPerformance:
+                setEnergyPerformance(defaultenergyPerformance)
             for proc in json_object['processes']:
                 if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
                     for extra in proc['extra_commands']:
@@ -245,6 +308,8 @@ def percentages(json_object, percenttime):
             printMessage("Found cpu percentage: '" + proc['name'] + "' --> " + str(cpuPercent))
             if governor:
                 setGovernor(proc['governor'])
+            if energyPerformance:
+                setEnergyPerformance(proc['energyPerformance'])
             for extra in proc['extra_commands']:
                 if extra != "":
                     executeCommand(extra)
@@ -302,6 +367,7 @@ def sensors(json_object, stime):
                                 # we are reaching the critical temp
                                 stime = int(time())
                                 setGovernor(s['governor'])
+                                setEnergyPerformance(s['energyPerformance'])
                                 for extra in s['extra_commands']:
                                     if extra != "":
                                         executeCommand(extra)

@@ -4,37 +4,43 @@
             "name": "emerge",
             "state": "absent",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "gcc",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "cc1plus",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "rustc",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "steam",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "sleep",
-            "state": "absent",
+            "state": "present",
             "extra_commands": ["hostname", "echo zoticone"],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "DEFAULTS",
@@ -49,7 +55,8 @@
             "label": "Tdie",
             "percent_from_critical": "5.0",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "amdgpu",
@@ -57,7 +64,17 @@
             "label": "edge",
             "percent_from_critical": "5.0",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
+        },
+        {
+            "name": "coretemp",
+            "state": "present",
+            "label": "Package id 0",
+            "percent_from_critical": "10.0",
+            "extra_commands": [],
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "nct6795iss",
@@ -65,7 +82,8 @@
             "label": "CPUTIN",
             "percent_from_critical": "10.0",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "nct6795",
@@ -73,7 +91,8 @@
             "label": "AUXTIN0",
             "percent_from_critical": "10.0",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         }
     ],
     "percentages": [
@@ -83,7 +102,8 @@
             "max": "9.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "ten",
@@ -91,7 +111,8 @@
             "max": "19.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "twenty",
@@ -99,7 +120,8 @@
             "max": "29.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "thirty",
@@ -107,7 +129,8 @@
             "max": "39.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "forty",
@@ -115,7 +138,8 @@
             "max": "49.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "fifty",
@@ -123,7 +147,8 @@
             "max": "59.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "sixty",
@@ -131,7 +156,8 @@
             "max": "69.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "powersave"
+            "governor": "powersave",
+            "energyPerformance": "power"
         },
         {
             "name": "seventy",
@@ -139,7 +165,8 @@
             "max": "79.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "eigthy",
@@ -147,7 +174,8 @@
             "max": "89.9",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "ninety",
@@ -155,7 +183,8 @@
             "max": "100",
             "state": "present",
             "extra_commands": [],
-            "governor": "performance"
+            "governor": "performance",
+            "energyPerformance": "performance"
         }
     ]
 }
