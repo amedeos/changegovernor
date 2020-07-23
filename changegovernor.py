@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.5.0"
+__version__ = "0.5.3"
 
 def printMessage(msg, printMSG=False):
     """
@@ -45,7 +45,7 @@ def checkAvailableGovernor(governor,
         printMessage("No read permission on file '" + agfile + "' ... Exit", True)
         sys.exit(1)
 
-def checkAvailableEnergyPerformance(energyPerformance,
+def checkAvailableEnergyPerformance(lenergyPerformance,
     agfile = '/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_available_preferences'):
     """
     Return boolean if the energyPerformance exist or not
@@ -55,13 +55,15 @@ def checkAvailableEnergyPerformance(energyPerformance,
         ag.resolve(strict=True)
         for line in ag.open(mode='r'):
             printMessage("CPU energyPerformance: '" + line + "'")
-            if re.search(energyPerformance, line):
-                printMessage("Found energyPerformance '" + energyPerformance + "'")
+            if re.search(lenergyPerformance, line):
+                printMessage("Found energyPerformance '" + lenergyPerformance + "'")
                 return True
         return False
     except FileNotFoundError:
-        printMessage("File '" + agfile + "' doesn't exist... Exit", True)
-        sys.exit(1)
+        printMessage("File '" + agfile + "' doesn't exist... disabling energyPerformance", True)
+        global energyPerformance
+        energyPerformance = False
+        return False
     except PermissionError:
         printMessage("No read permission on file '" + agfile + "' ... Exit", True)
         sys.exit(1)
@@ -113,11 +115,11 @@ def parseArgs(parser):
     parser.add_argument('-g', '--change-governor', dest='GOVERNOR',
         action='store_true', default=False, help='Change cpu governor from default to the choosed one')
     parser.add_argument('-d', '--default-governor', dest='DEFAULTGOVERNOR',
-        default='powersave', help='Default cpu scheduler')
+        default='powersave', help='Default (powersave) cpu scheduler')
     parser.add_argument('-e', '--change-energy-erformance', dest='ENERGYPERFORMANCE',
         action='store_true', default=False, help='Change cpu energy performance from default to the choosed one')
     parser.add_argument('-D', '--default-energy-performance', dest='DEFAULTENERGYPERFORMANCE',
-        default='power', help='Default cpu energy performance')
+        default='power', help='Default (power) cpu energy performance')
     parser.add_argument('-c', '--config-file', dest='CONFIGURATIONFILE',
         default='/etc/changegovernor.json', help='Configuration file as json')
     parser.add_argument('-r', '--restore-seconds', type=int, dest='RESTORESECONDS',
