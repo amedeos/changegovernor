@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.5.3"
+__version__ = "0.5.4"
 
 def printMessage(msg, printMSG=False):
     """
@@ -245,9 +245,10 @@ def setEnergyPerformance(energyPerformance):
         if g:
             printMessage("The energyPerformance '" + energyPerformance + "' is the current energyPerformance")
         else:
-            printMessage("Change to energyPerformance: '" + energyPerformance + "'", True)
-            cmd = "echo " + energyPerformance + " | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference > /dev/null"
-            executeCommand(cmd)
+            if Path('/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference').is_file():
+                printMessage("Change to energyPerformance: '" + energyPerformance + "'", True)
+                cmd = "echo " + energyPerformance + " | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference > /dev/null"
+                executeCommand(cmd)
     except ValueError as e:
         printMessage("An error occurred during setEnergyPerformance function... Exit", True)
         sys.exit(1)
