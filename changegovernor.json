@@ -15,7 +15,21 @@
             "energyPerformance": "performance"
         },
         {
+            "name": "cc1",
+            "state": "present",
+            "extra_commands": [],
+            "governor": "performance",
+            "energyPerformance": "performance"
+        },
+        {
             "name": "cc1plus",
+            "state": "present",
+            "extra_commands": [],
+            "governor": "performance",
+            "energyPerformance": "performance"
+        },
+        {
+            "name": "sip",
             "state": "present",
             "extra_commands": [],
             "governor": "performance",
