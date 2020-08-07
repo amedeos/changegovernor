@@ -57,6 +57,13 @@
             "energyPerformance": "performance"
         },
         {
+            "name": "qemu-system-x86_64",
+            "state": "present",
+            "extra_commands": [],
+            "governor": "performance",
+            "energyPerformance": "performance"
+        },
+        {
             "name": "vlc",
             "state": "present",
             "extra_commands": [],
