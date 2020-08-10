@@ -189,7 +189,14 @@ def checkIfProcessIsRunning(process, argument=""):
                 printMessage("Found process '" + process + "' with pid '"
                     + str(proc.pid) + "'")
                 # found the process, now check if argument is not empty
-                return True, proc
+                if argument != "":
+                    for c in proc.cmdline():
+                        if re.search(argument, str(c)):
+                            printMessage("Found argument " + argument + " (" + str(c)  +
+                                ") in process " + proc.name() + " " + str(proc.pid) )
+                            return True, proc
+                else:
+                    return True, proc
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     printMessage("Process '" + process + "' NOT found")
