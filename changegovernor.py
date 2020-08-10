@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.5.5"
+__version__ = "0.6.0"
 
 def printMessage(msg, printMSG=False):
     """
@@ -23,6 +23,22 @@ def printMessage(msg, printMSG=False):
         now = datetime.now()
         date_time = now.strftime("%Y-%m-%d  %H:%M:%S")
         print(date_time, msg)
+
+def writeFile(fpath, scontent):
+    """
+    Write file fpath with the content of scontent
+    """
+    try:
+        f = open(fpath, "w")
+        f.write(scontent)
+        f.close()
+        return True
+    except FileNotFoundError:
+        printMessage("File '" + fpath + "' doesn't exist... Exit", True)
+        return False
+    except PermissionError:
+        printMessage("No read/write permission on file '" + fpath + "' ... Exit", True)
+        return False
 
 def checkAvailableGovernor(governor,
     agfile = '/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors'):
@@ -159,11 +175,10 @@ def validateEnergyPerformance(energyPerformance):
     energyPerformance present on the host
     """
     printMessage("Validate energyPerformance '" + energyPerformance + "'")
-    if checkAvailableGovernor(energyPerformance) == False:
-        printMessage("Energy performance: '" + energyPerformance + "' not found... Exit", True)
-        sys.exit(1)
+    if checkAvailableEnergyPerformance(energyPerformance) == False:
+        printMessage("Energy performance: '" + energyPerformance + "' not found...")
 
-def checkIfProcessIsRunning(process):
+def checkIfProcessIsRunning(process, argument=""):
     """
     Return boolean, based on the presence of the process
     running on the host
@@ -173,11 +188,12 @@ def checkIfProcessIsRunning(process):
             if process in proc.name():
                 printMessage("Found process '" + process + "' with pid '"
                     + str(proc.pid) + "'")
-                return True
+                # found the process, now check if argument is not empty
+                return True, proc
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
     printMessage("Process '" + process + "' NOT found")
-    return False
+    return False, ""
 
 def checkProcess(json_object):
     """
@@ -188,18 +204,24 @@ def checkProcess(json_object):
     try:
         for p in json_object['processes']:
             process = p['name']
+            process_argument = ''
+            try:
+                process_argument = p['process_argument']
+            except KeyError as k:
+                pass
             if (p['state'] != "present") or ( process == "DEFAULTS"):
                 printMessage("Skip process '" + process +
                     "' as it's state is not 'present' -> " + p['state'] +
                     " or is DEFAULTS")
                 continue
             printMessage("Trying to find process: '" + str(process) + "'")
-            if checkIfProcessIsRunning(process):
-                return True, process
+            sp, spObject = checkIfProcessIsRunning(process, process_argument)
+            if sp:
+                return True, process, spObject
     except ValueError as e:
         printMessage("An error occurred during checkProcess function... Exit", True)
         sys.exit(1)
-    return False, ""
+    return False, "", ""
 
 def executeCommand(cmd):
     """
@@ -212,6 +234,22 @@ def executeCommand(cmd):
         printMessage("An error occurred during executeCommand function... Exit", True)
         sys.exit(1)
 
+def setSingleGovernor(ncpu, governor):
+    """
+    Set the desired governor only on the specified CPU (ncpu).
+    Return true if set the governor and false if not
+    """
+    printMessage("Setting governor " + governor + " to cpu " + str(ncpu))
+    if( (ncpu > (psutil.cpu_count()-1)) and (ncpu >= 0)):
+        printMessage("Error cpu " + str(ncpu) + " is not a valid cpu... Exit")
+        return False
+    try:
+        sPathGovernor = '/sys/devices/system/cpu/cpu' + str(ncpu) + '/cpufreq/scaling_governor'
+        return writeFile(sPathGovernor, governor)
+    except ValueError as e:
+        printMessage("An error occurred during setSingleGovernor function...", True)
+        return False
+
 def setGovernor(governor):
     """
     Set the desired governor as the current one
@@ -221,16 +259,34 @@ def setGovernor(governor):
         # validate the governor
         validateGovernor(governor)
         # first verify if the current governor in use
-        g = checkAvailableGovernor(governor, '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor')
-        if g:
-            printMessage("The governor '" + governor + "' is the current governor")
-        else:
-            printMessage("Change to governor: '" + governor + "'", True)
-            cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
-            executeCommand(cmd)
+        #g = checkAvailableGovernor(governor, '/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor')
+        #if g:
+        #    printMessage("The governor '" + governor + "' is the current governor")
+        #else:
+        #    printMessage("Change to governor: '" + governor + "'", True)
+        #    cmd = "echo " + governor + " | tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor > /dev/null"
+        #    executeCommand(cmd)
+        for i in range( 0, (psutil.cpu_count()) ):
+            r = setSingleGovernor(i, governor)
     except ValueError as e:
         printMessage("An error occurred during setGovernor function... Exit", True)
         sys.exit(1)
+
+def setSingleEnergyPerformance(ncpu, energyPerformance):
+    """
+    Set the desired energyPerformance only on the specified CPU (ncpu).
+    Return true if set whitout errors, and false if not
+    """
+    printMessage("Setting energyPerformance '" + energyPerformance + "' to cpu " + str(ncpu))
+    if( (ncpu > (psutil.cpu_count()-1)) and (ncpu >= 0)):
+        printMessage("Error cpu " + str(ncpu) + " is not a valid cpu... Exit")
+        return False
+    try:
+        sPathGovernor = '/sys/devices/system/cpu/cpu' + str(ncpu) + '/cpufreq/energy_performance_preference'
+        return writeFile(sPathGovernor, energyPerformance)
+    except ValueError as e:
+        printMessage("An error occurred during setSingleEnergyPerformance function...", True)
+        return False
 
 def setEnergyPerformance(energyPerformance):
     """
@@ -241,14 +297,16 @@ def setEnergyPerformance(energyPerformance):
         # validate the energyPerformance
         validateEnergyPerformance(energyPerformance)
         # first verify if the current energyPerformance in use
-        g = checkAvailableEnergyPerformance(energyPerformance, '/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference')
-        if g:
-            printMessage("The energyPerformance '" + energyPerformance + "' is the current energyPerformance")
-        else:
-            if Path('/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference').is_file():
-                printMessage("Change to energyPerformance: '" + energyPerformance + "'", True)
-                cmd = "echo " + energyPerformance + " | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference > /dev/null"
-                executeCommand(cmd)
+        #g = checkAvailableEnergyPerformance(energyPerformance, '/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference')
+        #if g:
+        #    printMessage("The energyPerformance '" + energyPerformance + "' is the current energyPerformance")
+        #else:
+        #    if Path('/sys/devices/system/cpu/cpu0/cpufreq/energy_performance_preference').is_file():
+        #        printMessage("Change to energyPerformance: '" + energyPerformance + "'", True)
+        #        cmd = "echo " + energyPerformance + " | tee /sys/devices/system/cpu/cpu*/cpufreq/energy_performance_preference > /dev/null"
+        #        executeCommand(cmd)
+        for i in range( 0, (psutil.cpu_count()) ):
+            r = setSingleEnergyPerformance(i, energyPerformance)
     except ValueError as e:
         printMessage("An error occurred during setEnergyPerformance function... Exit", True)
         sys.exit(1)
@@ -259,7 +317,7 @@ def processes(json_object, ptime):
     and execute every extra commands required by user
     If no process will be found return 0
     """
-    p, pname = checkProcess(json_object)
+    p, pname, pobject = checkProcess(json_object)
     if p:
         # one of the process was found
         ptime = int(time())
