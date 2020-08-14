@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 def printMessage(msg, printMSG=False):
     """
@@ -183,6 +183,8 @@ def checkIfProcessIsRunning(process, argument=""):
     Return boolean, based on the presence of the process
     running on the host
     """
+    rState = False
+    rProcs = []
     for proc in psutil.process_iter():
         try:
             if process in proc.name():
@@ -194,13 +196,15 @@ def checkIfProcessIsRunning(process, argument=""):
                         if re.search(argument, str(c)):
                             printMessage("Found argument " + argument + " (" + str(c)  +
                                 ") in process " + proc.name() + " " + str(proc.pid) )
-                            return True, proc
+                            rState = True
+                            rProcs.append( proc )
                 else:
-                    return True, proc
+                    rState = True
+                    rProcs.append( proc )
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass
-    printMessage("Process '" + process + "' NOT found")
-    return False, ""
+    #printMessage("Process '" + process + "' NOT found")
+    return rState, rProcs
 
 def checkProcess(json_object):
     """
@@ -209,7 +213,7 @@ def checkProcess(json_object):
     case return True and the name of process
     """
     try:
-        for p in json_object['processes']:
+        for p in json_object:
             process = p['name']
             process_argument = ''
             try:
@@ -324,7 +328,7 @@ def processes(json_object, ptime):
     and execute every extra commands required by user
     If no process will be found return 0
     """
-    p, pname, pobject = checkProcess(json_object)
+    p, pname, pobject = checkProcess(json_object['processes'])
     if p:
         # one of the process was found
         ptime = int(time())
@@ -347,6 +351,43 @@ def processes(json_object, ptime):
             if energyPerformance:
                 setEnergyPerformance(defaultenergyPerformance)
             for proc in json_object['processes']:
+                if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
+                    for extra in proc['extra_commands']:
+                        if extra != "":
+                            executeCommand(extra)
+    return ptime
+
+def processesAffinity(json_object, ptime):
+    """
+    Loop for processes and set the corresponding governor, energyPerformance,
+    and execute every extra commands required by user
+    If no process will be found return 0
+    """
+    p, pname, pobject = checkProcess(json_object['processes_affinity'])
+    if p:
+        # one of the process was found
+        ptime = int(time())
+        for proc in json_object['processes_affinity']:
+            if ( proc['name'] == pname ) and ( proc['state'] == "present" ):
+                if governor:
+                    ### set the cpu_affinity
+                    aP, aProcs = checkIfProcessIsRunning(pname, proc['process_argument'])
+                    if aP:
+                        for c in aProcs:
+                            printMessage("Set cpu_affinity to " + str(proc['cpu_affinity']) +
+                                " to pid " + str(c.pid) )
+                            c.cpu_affinity( cpus=proc['cpu_affinity'] )
+                            for n in proc['cpu_affinity']:
+                                setSingleGovernor(n, proc['governor'])
+                #if energyPerformance:
+                #    setEnergyPerformance(proc['energyPerformance'])
+                for extra in proc['extra_commands']:
+                    if extra != "":
+                        executeCommand(extra)
+    else:
+        if ( ptime > 0 ) and ( ( int(time()) - ptime ) > restoreseconds ):
+            ptime = 0
+            for proc in json_object['processes_affinity']:
                 if ( proc['name'] == "DEFAULTS" ) and ( proc['state'] == "present" ):
                     for extra in proc['extra_commands']:
                         if extra != "":
@@ -485,6 +526,17 @@ def main():
                     # return to main / sensors loop
                     break
                 ptime = processes(json_object, ptime)
+                sleeper(seconds)
+            # set governor based on processes_affinity running
+            ptime = processesAffinity(json_object, ptime)
+            while ptime > 0:
+                # again, check if critical temperatures
+                # was reached
+                stime = sensors(json_object, stime)
+                if stime > 0:
+                    # return to main / sensors loop
+                    break
+                ptime = processesAffinity(json_object, ptime)
                 sleeper(seconds)
             # set governor based on percentages
             percenttime = percentages(json_object, percenttime)

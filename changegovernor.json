@@ -94,6 +94,32 @@
             "extra_commands": []
         }
     ],
+    "processes_affinity": [
+        {
+            "name": "emerge",
+            "state": "present",
+            "process_argument": "--sync",
+            "extra_commands": [],
+            "cpu_affinity": [1],
+            "governor": "performance"
+        },
+        {
+            "name": "emerge",
+            "state": "present",
+            "process_argument": "--update",
+            "extra_commands": [],
+            "cpu_affinity": [0],
+            "governor": "performance"
+        },
+        {
+            "name": "sleep",
+            "state": "present",
+            "process_argument": "777",
+            "extra_commands": [],
+            "cpu_affinity": [0],
+            "governor": "performance"
+        }
+    ],
     "sensors": [
         {
             "name": "k10temp",
