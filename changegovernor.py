@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.7.1"
+__version__ = "0.7.2"
 
 def printMessage(msg, printMSG=False):
     """
@@ -461,7 +461,19 @@ def sensors(json_object, stime):
                         printMessage("sensors - Found  label '" +
                             s['label'] + "' for sensor '" + s['name'] + "'")
                         temp = l.current
-                        crit = l.critical
+                        try:
+                            if ( isinstance(l.critical, (int, float)) ):
+                                printMessage("sensors - " + s['name'] +
+                                    " " + s['label'] + " critical: " + str(l.critical))
+                                crit = float(l.critical)
+                            else:
+                                printMessage("sensors - " + s['name'] +
+                                    " " + s['label'] + " set critical from config: " + s['critical'])
+                                crit = float(s['critical'])
+                        except Exception as e:
+                            printMessage("sensors - " + s['name'] + 
+                                " Error on retrieve critical temperature ")
+                            crit = None
                         printMessage("sensors - " + s['name'] +
                             " " + s['label'] + " temperature: " + str(temp))
                         printMessage("sensors - " + s['name'] +
