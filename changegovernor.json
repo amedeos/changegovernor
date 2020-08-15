@@ -73,14 +73,6 @@
             "energyPerformance": "performance"
         },
         {
-            "name": "vlc",
-            "state": "present",
-            "process_argument": "",
-            "extra_commands": [],
-            "governor": "performance",
-            "energyPerformance": "performance"
-        },
-        {
             "name": "sleep",
             "state": "present",
             "process_argument": "666",
@@ -104,12 +96,13 @@
             "governor": "performance"
         },
         {
-            "name": "emerge",
+            "name": "vlc",
             "state": "present",
-            "process_argument": "--update",
+            "process_argument": "",
             "extra_commands": [],
-            "cpu_affinity": [0],
-            "governor": "performance"
+            "cpu_affinity": [1],
+            "governor": "performance",
+            "energyPerformance": "performance"
         },
         {
             "name": "sleep",

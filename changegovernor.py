@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.7.0"
+__version__ = "0.7.1"
 
 def printMessage(msg, printMSG=False):
     """
