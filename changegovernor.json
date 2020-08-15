@@ -118,7 +118,7 @@
             "name": "k10temp",
             "state": "present",
             "label": "Tdie",
-            "critical": "72.0",
+            "critical": "70.0",
             "percent_from_critical": "5.0",
             "extra_commands": [],
             "governor": "powersave",
