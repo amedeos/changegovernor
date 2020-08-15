@@ -11,7 +11,7 @@ import json
 import psutil
 import subprocess
 
-__version__ = "0.7.2"
+__version__ = "0.7.3"
 
 def printMessage(msg, printMSG=False):
     """
@@ -486,9 +486,12 @@ def sensors(json_object, stime):
                                 str(p) + "% of critical " + str(crit))
                             if (float(s['percent_from_critical']) >= (100.0 - p) ):
                                 # we are reaching the critical temp
+                                printMessage("sensors - " + s['name'] + " " + s['label'] +
+                                    " reached critical temperature: change the governor " )
                                 stime = int(time())
                                 setGovernor(s['governor'])
-                                setEnergyPerformance(s['energyPerformance'])
+                                if energyPerformance:
+                                    setEnergyPerformance(s['energyPerformance'])
                                 for extra in s['extra_commands']:
                                     if extra != "":
                                         executeCommand(extra)
@@ -536,6 +539,7 @@ def main():
                 stime = sensors(json_object, stime)
                 if stime > 0:
                     # return to main / sensors loop
+                    sleeper(seconds*10)
                     break
                 ptime = processes(json_object, ptime)
                 sleeper(seconds)
@@ -547,12 +551,16 @@ def main():
                 stime = sensors(json_object, stime)
                 if stime > 0:
                     # return to main / sensors loop
+                    sleeper(seconds*10)
                     break
                 ptime = processesAffinity(json_object, ptime)
                 sleeper(seconds)
             # set governor based on percentages
             percenttime = percentages(json_object, percenttime)
         # at the end we can sleep
+        else:
+            sleeper(seconds*10)
+            continue
         sleeper(seconds)
 
 try:
